@@ -2,10 +2,13 @@ package cmd
 
 import (
   "fmt"
+  "log"
   "strings"
   "os"
   "os/user"
+  "io/ioutil"
   "github.com/codegangsta/cli"
+  "crypto/rsa"
   "../cert"
 )
 
@@ -109,16 +112,16 @@ func MakeCertificate (c *cli.Context) {
   cn = strings.Replace(cn, " ", "_", -1)
 
   // If no private key is specified, make one.
-  // if !c.IsSet("key") {
-    pk := cert.CreatePrivateKey(2048)
-  //   fmt.Print(pk.PublicKey)
-  // } else {
-  //
-  // }
+  var pk *rsa.PrivateKey
+  if !c.IsSet("key") {
+    pk = cert.CreatePrivateKey(2048)
+  } else {
+    pk = cert.ReadPrivateKey(c.String("key"))
+  }
 
   // Create a CSR struct
   csr := cert.CSR{
-    CA: true,
+    CA: false,
     Passphrase: c.String("passphrase"),
     Size: c.Int("bits"),
     Days: c.Int("expire"),
@@ -131,13 +134,24 @@ func MakeCertificate (c *cli.Context) {
     L: c.String("city"),
   }
 
+  if c.IsSet("certauth") {
+    if !c.IsSet("key") {
+      log.Fatalf("--key or --k is required when using --certauth or --ca. (Private Key Not Found)")
+    }
+    csr.SignCert = c.String("certauth")
+    csr.SignKey = c.String("key")
+  } else {
+    csr.CA = true
+  }
+
   certificate, privatekey := cert.Make(csr)
 
   if !c.IsSet("output") {
     fmt.Print(string(certificate))
     fmt.Print(string(privatekey))
-    // fmt.Print(string(pk))
   } else {
-    println(c.String("output"))
+    filepath := c.String("output") + "/" + cn
+    ioutil.WriteFile(filepath + ".crt", certificate, 0600)
+    ioutil.WriteFile(filepath + ".key", privatekey, 0600)
   }
 }
