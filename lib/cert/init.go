@@ -2,6 +2,7 @@ package cert
 
 import (
   "time"
+  "net"
   // "os"
   // "encoding/gob"
   "io/ioutil"
@@ -29,7 +30,7 @@ type CSR struct {
   S string // State/Province
   L string // Locality
   Domains []string // Domains (Comma-separated)
-  Email string // Email Address of Admin
+  Email []string // Email Address of Admin
   SignCert string // Path to signing certificate
   SignKey string // Path to signing key
 }
@@ -66,6 +67,30 @@ func Make(csr CSR) (certificate []byte, privatekey []byte) {
     NotAfter : time.Now().AddDate(0, 0, csr.Days),
     KeyUsage : x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
     ExtKeyUsage : []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+  }
+
+  // Extract IP addresses from SAN list
+  var ip []net.IP
+  var uri []string
+  for _, dom := range csr.Domains {
+    addr := net.ParseIP(dom)
+    if addr != nil {
+      ip = append(ip, addr)
+    } else {
+      uri = append(uri, dom)
+    }
+  }
+
+  if len(ip) > 0 {
+    template.IPAddresses = ip
+  }
+  if len(uri) > 0 {
+    template.DNSNames = uri
+  }
+
+  // Add email addresses
+  if len(csr.Email) > 0 {
+    template.EmailAddresses = csr.Email
   }
 
   var raw []byte

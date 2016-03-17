@@ -4,7 +4,7 @@ import (
   "os"
   "github.com/codegangsta/cli"
   "./lib/cmd"
-  "./lib/cmd/trust"
+  "./lib/cmd/trustedroot"
   // "net"
   // "log"
   // "encoding/json"
@@ -44,15 +44,8 @@ func main() {
 
   app.Commands = []cli.Command{
     cmd.NewCertificate(),
-    trust.NewTrustCertificate(),
-    {
-      Name: "untrust",
-      Aliases: []string{"u"},
-      Usage: "Remove certificate from the trusted root keychain.",
-      Action: func(c *cli.Context) {
-        println("untrusted certificate: ", c.Args().First())
-      },
-    },
+    trustedroot.NewTrustCertificate(),
+    trustedroot.NewUntrustCertificate(),
   }
 
   // app.Action = func(c *cli.Context) {

@@ -68,8 +68,13 @@ func NewCertificate () cli.Command {
         Value: "self",
         Usage: "Signing certificate (CA). If this is not specified, the certificate will be self-signed.",
       },
+      cli.StringSliceFlag{
+        Name: "email",
+        Value: &cli.StringSlice{},
+        Usage: "Optionally specify the email address of the certificate admin. This can be specified multiple times.",
+      },
       cli.StringFlag{
-        Name: "output, d",
+        Name: "output, dir",
         Usage:"Output directory where the certificate and private key are stored.",
       },
       cli.StringFlag{
@@ -102,9 +107,33 @@ func NewCertificate () cli.Command {
         Value: "Unknown",
         Usage: "Town/City/Locality",
       },
+      cli.StringSliceFlag{
+        Name: "san",
+        Value: &cli.StringSlice{},
+        Usage: "A domain or IP address associated with the certificate (Subject Alternative Name). Declare a new argument for each domain/IP.",
+      },
     },
     Action: MakeCertificate,
   }
+}
+
+func stringInSlice(str string, list []string) bool {
+  for _, v := range list {
+    if v == str {
+      return true
+    }
+  }
+  return false
+}
+
+func deduplicate (slice []string) []string {
+  cleaned := []string{}
+ 	for _, value := range slice {
+ 		if !stringInSlice(value, cleaned) {
+ 			cleaned = append(cleaned, value)
+ 		}
+ 	}
+  return cleaned
 }
 
 func MakeCertificate (c *cli.Context) {
@@ -134,15 +163,27 @@ func MakeCertificate (c *cli.Context) {
     L: c.String("city"),
   }
 
+  if c.IsSet("email") {
+    csr.Email = deduplicate(c.StringSlice("email"))
+  }
+
+  var slice []string
+  if c.IsSet("san") {
+    slice = c.StringSlice("san")
+  }
+
   if c.IsSet("certauth") {
     if !c.IsSet("key") {
       log.Fatalf("--key or --k is required when using --certauth or --ca. (Private Key Not Found)")
     }
     csr.SignCert = c.String("certauth")
     csr.SignKey = c.String("key")
+    slice = append(slice, "localhost", "127.0.0.1")
   } else {
     csr.CA = true
   }
+
+  csr.Domains = deduplicate(slice)
 
   certificate, privatekey := cert.Make(csr)
 

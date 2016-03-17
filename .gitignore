@@ -29,3 +29,6 @@ golibs
 .*
 !.gitignore
 !.gitmodules
+certutil
+certutil.exe
+

@@ -1,9 +1,8 @@
-package trust
+package trustedroot
 
 import (
   "bytes"
   "fmt"
-  "log"
 	"os/exec"
 )
 
@@ -15,8 +14,9 @@ import (
 func AddSystemKeychainTrust(certificate string) error {
   var _stdout bytes.Buffer
   var _stderr bytes.Buffer
-  cmd := exec.Command("security", "add-trusted-cert", "-d", "-r trustRoot", "-k '/Library/Keychains/System.keychain'", certificate)
-  cmd.Stdout = &output
+  // cmd := exec.Command("security", "add-trusted-cert -d -r trustRoot -k \"/Library/Keychains/System.keychain\"", certificate)
+  cmd := exec.Command("security", "add-trusted-cert", "-d", "-r trustRoot", "-k \"/Library/Keychains/System.keychain\"", certificate)
+  cmd.Stdout = &_stdout
   cmd.Stderr = &_stderr
   err := cmd.Run()
   if err != nil {
@@ -29,8 +29,8 @@ func AddSystemKeychainTrust(certificate string) error {
 func AddUserKeychainTrust(certificate string) error {
   var _stdout bytes.Buffer
   var _stderr bytes.Buffer
-  cmd := exec.Command("security", "add-trusted-cert", "-r trustRoot", "-k '/Library/Keychains/System.keychain'", certificate)
-  cmd.Stdout = &output
+  cmd := exec.Command("security", "add-trusted-cert", "-r trustRoot", "-k \"/Library/Keychains/System.keychain\"", certificate)
+  cmd.Stdout = &_stdout
   cmd.Stderr = &_stderr
   err := cmd.Run()
   if err != nil {
@@ -44,7 +44,7 @@ func RemoveSystemKeychainTrust(certificate string) error {
   var _stdout bytes.Buffer
   var _stderr bytes.Buffer
   cmd := exec.Command("security", "remove-trusted-cert", "-d", certificate)
-  cmd.Stdout = &output
+  cmd.Stdout = &_stdout
   cmd.Stderr = &_stderr
   err := cmd.Run()
   if err != nil {
@@ -58,7 +58,7 @@ func RemoveUserKeychainTrust(certificate string) error {
   var _stdout bytes.Buffer
   var _stderr bytes.Buffer
   cmd := exec.Command("security", "remove-trusted-cert", certificate)
-  cmd.Stdout = &output
+  cmd.Stdout = &_stdout
   cmd.Stderr = &_stderr
   err := cmd.Run()
   if err != nil {
